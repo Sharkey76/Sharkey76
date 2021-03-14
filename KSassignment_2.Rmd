@@ -1,0 +1,120 @@
+---
+title: 'Assignment # 1'
+author: "Kieran Sharkey"
+date: "27/02/2021"
+output: 
+  html_document:
+    number_sections: true
+---
+
+**NOTE:** Some code has already been added to a few exercises. In these codes, the five dashes (-----) denote blank spaces where you are supposed to write commands. Not all exercises include some code already pre-written for you.
+
+# Initial Setup
+
+Complete the R chunk below to set up global options for your R Markdown document (e.g. include = FALSE) and load the libraries you will use: tidyverse, GGally, knitr (you may need to install them before starting the assignment).
+
+Also include in this chunk the command to read in the `seedling_data.csv` file into a data frame (use function `read_csv()`). Continue the command to read in the data file using the pipe operator (`%>%`) and function `mutate()` from package `dplyr` (included in package `tidyverse`) to create standardized versions of the predictor variables `ma`, `op`, and `zn`. Name the standardized variables `zma`, `zop`, and `zzn`.
+
+```{r setup, include = FALSE}
+
+library(GGally)
+library(tidyverse)
+library(knitr)
+
+dat <- read.csv("seedling_data.csv") %>% 
+mutate(zma = (ma - mean(ma)) / sd(ma), zop = (op - mean(op)) / sd(op), zzn= (zn -mean(zn)) / sd(zn))
+
+
+```
+
+# Inspect the Data
+
+## Summarize the data
+
+Complete the R chunk below to produce a table summarizing (i.e. with mean, standard deviation, minimum and maximum values) each variable in the data set. The table must include the following **five** columns: **Variable**, **Mean**, **SD** (for standard deviation), **Minimum** and **Maximum**. The column **Variable** must be a character vector with meaningful names for the variables (e.g. **Seed Mass** rather than **ma**). Do NOT use the standardized versions of the predictor variables in this summary and do NOT simply copy the values from the table in the HTML file provided (you are required to include code that computes the summary statistics as part of the exercise).
+
+**HINT:** Make a data frame with the summary statistics and convert the data frame to a table using the function `kable()` in package `knitr`.
+
+```{r data-summary, include = FALSE}
+ sapply(dat, mean, na.rm = TRUE)
+ sapply(dat, sd, na.rm = TRUE)
+ sapply(dat, min, na.rm = TRUE)
+ sapply(dat, max, na.rm = TRUE)
+
+ Mean <- c(40.2, 0.3, 13.4, 99.3)
+ Sd <- c(9.6, 0.2, 5.5, 53.2)
+ min <- c(14.8, 0.1, 6.9, 25.0)
+ Max <- c(60.2, 0.9, 28.7, 306.0)
+ variable <- c("Seed Mass", "Canopy Openness", "Zinc Concentration", "Plant Height")
+ Stats <- data.frame(variable, Mean, Sd, min, Max)
+ kable(Stats, col.names = c("Variable", "Mean", "Sd", "Min", "Max"))
+```
+
+## Assess the correlation between pairs of predictor variables
+
+Complete the R chunk below to produce scatterplots between the predictor variables using the function `ggpairs()` from the `GGally` package (the function is based on the grammar of graphics and extends `ggplot2` functionality). You can find several examples of the use of `ggpairs()` in its help file or by searching the web. The function will output a matrix of plots showing scatterplots, probability density plots, and the correlation coefficient between every pair of variables. 
+
+To print more meaningful names for the variables (e.g. **Seed Mass** rather than **ma**) in the plots, pass the names in a character vector to the argument `columnLabels` in `ggpairs()`.
+
+Make sure to include an informative figure caption (using fig.cap in the chunk settings).
+
+**Answer the following question:** Based on your assessment of correlation between the predictor variables, should you include all of them in a multiple regression model? Explain your response.
+
+> From Looking at our regression we should not include all of the variables in our regression model. This is Because of the mostly negative correlation between the variables. If we had complied the variables together than it would be even more unstable. 
+
+```{r correlation-plot, echo = FALSE, fig.cap = "Fig. 1. Correlation plots between pairs of the predictor variables Seed Mass, Canopy Openness, and Zinc Concentration."}
+ggpairs(dat, columns = c(1, 2, 3), columnLabels = c("Seed Mass", "Canopy Openness", "Zinc concentration"))
+```
+
+# Fit the model to the data and check model assumptions
+
+Complete the R chunks below to fit a multiple regression model to the data using the function `lm()` and  **standardized** predictor variables. The model must only include main effects (i.e. do not include interactions in this assignment).
+
+In the same chunk, write commands to create a data frame containing two columns: the fitted values (obtained by the function `fitted()`) and the residuals (obtained by the function `resid()`). Both the `fitted()` and `resid()` functions must be applied to the object where you assigned the output of function `lm()`.
+
+Then, using the data frame holding fitted and residual values, use `ggplot()` to create (1) a fitted vs residual plot, (2) a Normal Q-Q plot of the residuals, and (3) a histogram of the residuals. Make sure to include meaningful axes labels and figure captions (using fig.cap in the chunk settings).
+
+**HINT:** For the fitted vs residual plot, you will want to use `geom_point()` and `geom_hline()` (the latter will enable you to add a horizontal line at the residual value of 0 for reference). For the Normal Q-Q plot, you will want to add `stat_qq()` and `stat_qq_line()` to your `ggplot` object. For the histogram, you will wan to use `geom_histogram()` (for a better looking histogram, set the colour and fill arguments of `geom_histogram()` to black and white, respectively, and binwidth to 5).
+
+**Answer the following question:** Which multiple regression model assumptions does each plot help you assess? Based on these plots, do you see any assumption being violated by the data? Explain your response.
+
+> For Figure 1 it represents the correlation betweeen fitted and residual variable. What this means is that the correlation between the Residual values and fitted values. THis chart tells me that the the correlation is not strong as the values are not linear thus and are random. 
+Figure 2 tells us the our theory is relativly on par with the results. This is because the values are relatively linear.
+Figure 3 show the values are most frequent near the or below zero. 
+
+
+  
+```{r fit-model, include = FALSE}
+
+mod <- lm(he ~ zma + zop + zzn, data = dat)
+
+fit_res <- data.frame(Fitted = fitted(mod), Residuals = resid(mod))
+
+```
+
+```{r fit-res, echo = FALSE, fig.cap = "Fig. 2. Fitted versus residual plot."}
+ggplot(fit_res, aes(x = Fitted, y = Residuals)) + # set the aesthetics for the x and y axes
+  geom_point() + # geom for plotting point\s
+  geom_hline(yintercept = 0, linetype = "dashed") + # geom for plotting a horizontal line at zero
+  xlab("Fitted") + # x-axis label
+  ylab("Residuals") + # y-axis label
+  theme_bw()
+```
+  
+```{r q-q, echo = FALSE, fig.cap = "Fig. 3. Normal Q-Q plot of residuals."}
+ggplot(fit_res, aes(sample = Residuals)) + # enter the variable for the aesthetics sample
+  stat_qq() + # stat_qq
+  stat_qq_line() + # stat_qq_line
+  xlab("Residual Quantiles") + # x-axis label
+  ylab("Theoretical Quantiles") + # y-axis label
+  theme_bw()
+```
+
+```{r hist, echo = FALSE, fig.cap = "Fig. 4. Histogram of residuals."}
+ggplot(fit_res, aes(Residuals)) + # set the aesthetics for the x axis
+  geom_histogram(color = "black", fill = "white", binwidth = 5) + # geom for plotting a histogram
+  xlab("Residuals") + # x-axis label
+  ylab("Frequency") + # y-axis label
+  theme_bw()
+```
+
